@@ -1,0 +1,106 @@
+{% extends "agora/base.html" %}
+
+{% load humanize %}
+{% load thumbnail %}
+{% load agora_tags %}
+{% load bootstrap %}
+
+{% block body %}
+    {% include "agora/_thread_breadcrumbs.html" with thread=thread %}
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <span class="pull-right">
+                <a class="btn btn-info btn-xs" href="?order_type={% ifequal order_type "asc" %}desc{% else %}asc{% endifequal %}"><i class="fa fa-sort"></i> Reverse Reply Order</a>
+                {% if can_create_reply %}
+                    <a class="btn btn-primary btn-xs" href="{% url "agora_reply_create" thread.pk %}"><i class="fa fa-reply"></i> Post a Reply</a>
+                {% endif %}
+            </span>
+            <h3>{{ thread.title }}</h3>
+            {% if thread.sticky %}<span class="label notice">sticky</span>{% endif %}
+            {% if thread.closed %}<span class="label">closed</span>{% endif %}
+            <div class="meta">
+                Started {{ thread.created|timesince }} ago
+                <str> &bull; </str>
+                {{ thread.view_count }} View{{ thread.view_count|pluralize }}
+                <str> &bull; </str>
+                {{ thread.reply_count }} Repl{{ thread.reply_count|pluralize:"y,ies" }}
+            </div>
+        </div>
+        <div class="list-group">
+            {% for post in posts %}
+                <div id="post-{{ post.pk }}" class="list-group-item post">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <a class="thumb media-object" href="{# url user_page post.author.pk #}">
+                                <img src="{{ post.author.profile.avatar|thumbnail_url:'avatar-large' }}" />
+                            </a>
+                            <a href="{# url user_page post.author.pk #}">{{ post.author.username }}</a><br />
+                            {# @@@ points, stars, level #}
+                            {{ post.author.post_count.all.0.count|intcomma }} post{{ post.author.post_count.all.0.count|pluralize }}
+                        </div>
+
+                        <div class="col-md-10">
+                            <div class="post-content">{{ post.content_html|safe }}</div>
+                            <div class="post-signature">
+                                <p>{{ member.forum_signature }}</p>
+                            </div>
+                            {% comment %}
+                            {% if user.is_authenticated %}
+                                @@@ rating?
+                            {% endif %}
+                            {% endcomment %}
+                            <div class="post-footer">
+                                <span class="post-timestamp">
+                                    Posted {{ post.created|timesince }} ago
+                                </span>
+                                <div class="post-actions">
+                                    {% if user.is_authenticated %}
+                                        <a class="btn btn-danger btn-xs" href="{# url forum_report post.pk #}"><i class="fa fa-exclamation-triangle"></i> Report</a>
+                                        {% if can_create_reply %}
+                                            <a class="btn btn-success btn-xs" href="{% url "agora_reply_create" thread.pk %}?quote={{ post.pk }}"><i class="fa fa-quote-right"></i> Quote</a>
+                                            <a class="btn btn-primary btn-xs" href="{% url "agora_reply_create" thread.pk %}"><i class="fa fa-reply"></i> Reply</a>
+                                        {% endif %}
+                                        {% if post|post_editable:request.user %}
+                                            <a class="btn btn-info btn-xs" href="{% url "agora_post_edit" post.kind post.pk %}"><i class="fa fa-edit"></i> Edit</a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="list-group-item">There are no posts on this thread.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if reply_form %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>Quick Reply</h4>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <img src="{{ user.profile.avatar|thumbnail_url:'avatar-large' }}" />
+                    </div>
+                    <div class="col-md-10">
+                        <form action="" method="POST" class="form">
+                            {% csrf_token %}
+                            <fieldset>
+                                {{ reply_form|bootstrap }}
+                            </fieldset>
+                            <div class="form-actions pull-right">
+                                <button class="btn btn-primary" type="submit"><i class="fa fa-reply"></i> Reply</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% include "pagination/pagination.html" %}
+{% endblock %}

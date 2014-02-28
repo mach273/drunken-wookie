@@ -1,0 +1,55 @@
+{% extends "agora/base.html" %}
+
+{% load humanize %}
+
+{% block body %}
+    <div class="breadcrumb">
+        <li><a href="{% url "agora_forums" %}">Forums</a></li>
+        {% if category.parent %}</span>
+            <li>
+                <a href="{% url "agora_category" category.parent.pk %}">
+                    {{ category.parent.title }}
+                </a>
+            </li>
+        {% endif %}
+        <li class="active">{{ category.title }}</li>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            {% include "agora/_category_panel.html" with categories=category.subcategories.all %}
+        </div>
+        <div class="col-md-9">
+            <div class="panel panel-default">
+                <div class="panel-heading">{{ category.title }}</div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Forum Name</th>
+                            <th>Last Post</th>
+                            <th>Threads</th>
+                            <th>Posts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for forum in forums %}
+                            <tr>
+                                <td><a href="{% url "agora_forum" forum.id %}">{{ forum.title }}</a><br />
+                                    <small>{{ forum.description }}</small></td>
+                                {% if forum.last_reply %}
+                                   <td><a href="{% url "agora_thread" forum.last_reply.thread.id %}">{{ forum.last_reply.thread.title }}</a><br />
+                                   <small>by <a href="{# url user_page forum.last_reply.author.id #}">{{ forum.last_reply.author.username }}</a></small></td>
+                                {% else %}
+                                    <td></td>
+                                {% endif %}
+                                <td>{{ forum.threads.all.count|intcomma }}</td>
+                                <td>{{ forum.post_count|intcomma }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% include "pagination/pagination.html" %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
